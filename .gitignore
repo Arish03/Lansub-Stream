@@ -1,0 +1,139 @@
+# =====================================================================
+# Gitignore for Lansub Stream (Root)
+# Covers: Python (Backend), Node / Next.js (Frontend), Environment, IDEs
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# Environment Variables & Secrets
+# ---------------------------------------------------------------------
+.env
+.env*.local
+.env.development
+.env.test
+.env.production
+*.env
+# Allow example templates to be committed
+!.env.example
+!.env.template
+
+# ---------------------------------------------------------------------
+# Operating System & Editors
+# ---------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs & Editors
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-workspace
+*.sublime-project
+*.swp
+*.swo
+*~
+
+# ---------------------------------------------------------------------
+# Logs & Databases
+# ---------------------------------------------------------------------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# SQLite / Local DBs
+*.sqlite
+*.sqlite3
+*.db
+
+# ---------------------------------------------------------------------
+# Python (Backend)
+# ---------------------------------------------------------------------
+# Bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Distribution / Packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Type checking / Linters
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+
+# ---------------------------------------------------------------------
+# Node / Next.js (Frontend)
+# ---------------------------------------------------------------------
+# Dependencies
+node_modules/
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Next.js & Build outputs
+.next/
+out/
+dist/
+coverage/
+
+# Vercel
+.vercel/
+
+# TypeScript cache
+*.tsbuildinfo
