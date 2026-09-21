@@ -11,7 +11,7 @@ class UserCreate(UserBase):
     password: str = Field(min_length=6)
 
 class UserOut(UserBase):
-    id: uuid.UUID
+    id: str
     created_at: Optional[datetime] = None
 
     class Config:

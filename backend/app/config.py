@@ -15,6 +15,17 @@ class Settings(BaseSettings):
         "DATABASE_URL", 
         "postgresql+asyncpg://lansub:lansub@172.27.252.246:5432/lansub"
     )
+
+        # MongoDB Authentication
+    MONGODB_URL: str = os.getenv(
+        "MONGODB_URL",
+        "mongodb://localhost:27017"
+    )
+
+    MONGODB_DB: str = os.getenv(
+        "MONGODB_DB",
+        "lansub_auth"
+    )
     
     # Redis
     REDIS_URL: str = os.getenv(
