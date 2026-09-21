@@ -38,9 +38,24 @@ export default function Dashboard() {
       if (p.speed !== undefined) setLiveSpeed(`${p.speed} RPM`);
       setTotalReadings((prev) => prev + 1);
 
-      // Update device lastSeen and telemetry in state
-      setDevices((prev) =>
-        prev.map((d) => {
+      // Update device lastSeen and telemetry in state, or add it if not yet in state
+      setDevices((prev) => {
+        const exists = prev.some((d) => d.device_key === lastReading.device_key);
+        if (!exists) {
+          return [
+            ...prev,
+            {
+              id: lastReading.data.device_id || 'dev_sim',
+              name: lastReading.data.device_name || lastReading.device_key,
+              device_key: lastReading.device_key,
+              template: 'generic-sensor',
+              status: 'online',
+              last_seen_at: new Date().toISOString(),
+              telemetry: p,
+            },
+          ];
+        }
+        return prev.map((d) => {
           if (d.device_key === lastReading.device_key) {
             return {
               ...d,
@@ -50,8 +65,8 @@ export default function Dashboard() {
             };
           }
           return d;
-        })
-      );
+        });
+      });
     }
   }, [lastReading]);
 
