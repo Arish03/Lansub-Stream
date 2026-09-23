@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.redis_client import redis_manager
-from app.routers import auth, devices, health, telemetry, ws
+from app.routers import auth, devices, health, telemetry, ws, rules, alarms, templates, assets
 from app.routers.ws import redis_listener
 from app.simulator import device_simulator
 
@@ -60,6 +60,10 @@ app.include_router(health.router, prefix=settings.API_V1_STR)
 app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(devices.router, prefix=settings.API_V1_STR)
 app.include_router(telemetry.router, prefix=settings.API_V1_STR)
+app.include_router(rules.router, prefix=settings.API_V1_STR)
+app.include_router(alarms.router, prefix=settings.API_V1_STR)
+app.include_router(templates.router, prefix=settings.API_V1_STR)
+app.include_router(assets.router, prefix=settings.API_V1_STR)
 app.include_router(ws.router)
 
 @app.get("/")

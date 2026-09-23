@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Bell, AlertTriangle, ShieldAlert, CheckCircle2, Info, Clock, 
   Search, Filter, Check, X, ArrowUpRight, Cpu, MapPin, 
   ChevronRight, RefreshCw, VolumeX, Eye
 } from 'lucide-react';
+import { fetchAlarms, acknowledgeAlarm, resolveAlarm, AlarmData } from '@/lib/api';
+import { useTelemetrySocket } from '@/lib/useSocket';
 
 interface Alarm {
   id: string;
@@ -93,19 +95,81 @@ const INITIAL_ALARMS: Alarm[] = [
   },
 ];
 
+function mapAlarmData(item: AlarmData): Alarm {
+  const sevMap: Record<string, 'critical' | 'warning' | 'info'> = {
+    CRITICAL: 'critical',
+    HIGH: 'critical',
+    MEDIUM: 'warning',
+    LOW: 'info',
+  };
+  return {
+    id: item.id,
+    title: item.title,
+    severity: sevMap[item.severity] || 'warning',
+    status: (item.status?.toLowerCase() as any) || 'active',
+    deviceId: item.device_id || 'DEV-GENERIC',
+    deviceName: (item.telemetry_snapshot as any)?.device_name || 'Monitored Unit',
+    asset: (item.telemetry_snapshot as any)?.asset || 'Production Facility',
+    ruleId: item.rule_id || 'RUL-SYS',
+    ruleName: item.title,
+    telemetrySnapshot: (item.telemetry_snapshot as any) || {},
+    timestamp: item.created_at ? new Date(item.created_at).toLocaleTimeString() : 'Just now',
+    acknowledgedBy: item.acknowledged_at ? 'Operator' : undefined,
+  };
+}
+
 export default function AlarmsPage() {
   const [alarms, setAlarms] = useState<Alarm[]>(INITIAL_ALARMS);
   const [searchQuery, setSearchQuery] = useState('');
   const [severityFilter, setSeverityFilter] = useState<'all' | 'critical' | 'warning' | 'info'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'acknowledged' | 'resolved'>('all');
   const [selectedAlarm, setSelectedAlarm] = useState<Alarm | null>(null);
+  const { lastMessage } = useTelemetrySocket();
+
+  const loadAlarms = async () => {
+    const data = await fetchAlarms();
+    if (data && data.length > 0) {
+      setAlarms(data.map(mapAlarmData));
+    }
+  };
+
+  useEffect(() => {
+    loadAlarms();
+    const interval = setInterval(loadAlarms, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Listen for real-time WebSocket alarm events
+  useEffect(() => {
+    if (lastMessage && (lastMessage as any).type === 'alarm' && (lastMessage as any).alarm) {
+      const live = (lastMessage as any).alarm;
+      setAlarms(prev => {
+        if (prev.some(a => a.id === live.id)) return prev;
+        const newAlm: Alarm = {
+          id: live.id,
+          title: live.title,
+          severity: live.severity === 'CRITICAL' ? 'critical' : 'warning',
+          status: 'active',
+          deviceId: live.device_id || 'DEV-LIVE',
+          deviceName: live.device_name || 'Active Sensor',
+          asset: 'Production Line',
+          ruleId: 'RUL-LIVE',
+          ruleName: live.title,
+          telemetrySnapshot: live.telemetry_snapshot || {},
+          timestamp: 'Just now',
+        };
+        return [newAlm, ...prev];
+      });
+    }
+  }, [lastMessage]);
 
   const criticalCount = alarms.filter(a => a.severity === 'critical' && a.status === 'active').length;
   const warningCount = alarms.filter(a => a.severity === 'warning' && a.status === 'active').length;
   const infoCount = alarms.filter(a => a.severity === 'info' && a.status === 'active').length;
   const resolvedCount = alarms.filter(a => a.status === 'resolved').length;
 
-  const handleAcknowledge = (id: string) => {
+  const handleAcknowledge = async (id: string) => {
+    await acknowledgeAlarm(id);
     setAlarms(alarms.map(a => 
       a.id === id ? { ...a, status: 'acknowledged', acknowledgedBy: 'Operator (Current Session)' } : a
     ));
@@ -114,7 +178,8 @@ export default function AlarmsPage() {
     }
   };
 
-  const handleResolve = (id: string) => {
+  const handleResolve = async (id: string) => {
+    await resolveAlarm(id);
     setAlarms(alarms.map(a => 
       a.id === id ? { ...a, status: 'resolved' } : a
     ));
@@ -139,11 +204,11 @@ export default function AlarmsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-red-400 uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-2 text-xs font-semibold text-red-500 dark:text-red-400 uppercase tracking-wider mb-1">
             <ShieldAlert className="w-3.5 h-3.5" /> Incident Management
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Active Alarms</h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Active Alarms</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Real-time threshold violations, equipment alarms, and automated escalation logs.
           </p>
         </div>
@@ -151,7 +216,7 @@ export default function AlarmsPage() {
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setAlarms(INITIAL_ALARMS)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs font-medium text-slate-400 hover:text-white transition-colors"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors shadow-xs cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" /> Refresh Stream
           </button>
@@ -160,50 +225,50 @@ export default function AlarmsPage() {
 
       {/* Severity Triage Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-900 border border-red-500/20 rounded-xl p-5 relative overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 border border-red-500/20 rounded-xl p-5 relative overflow-hidden shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-red-400">Critical Unacknowledged</span>
+            <span className="text-xs font-medium text-red-600 dark:text-red-400">Critical Unacknowledged</span>
             {criticalCount > 0 && <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />}
           </div>
-          <p className="text-3xl font-bold text-red-400 mt-2">{criticalCount}</p>
+          <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{criticalCount}</p>
           <p className="text-xs text-slate-500 mt-1">Immediate intervention required</p>
           <div className="absolute -right-2 -bottom-2 w-16 h-16 bg-red-500/5 rounded-full blur-xl pointer-events-none" />
         </div>
 
-        <div className="bg-slate-900 border border-amber-500/20 rounded-xl p-5">
+        <div className="bg-white dark:bg-slate-900 border border-amber-500/20 rounded-xl p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-amber-400">Major / Warning</span>
-            <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Major / Warning</span>
+            <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-amber-400" />
           </div>
-          <p className="text-3xl font-bold text-amber-400 mt-2">{warningCount}</p>
+          <p className="text-3xl font-bold text-amber-600 dark:text-amber-400 mt-2">{warningCount}</p>
           <p className="text-xs text-slate-500 mt-1">Approaching safe operating limits</p>
         </div>
 
-        <div className="bg-slate-900 border border-cyan-500/20 rounded-xl p-5">
+        <div className="bg-white dark:bg-slate-900 border border-cyan-500/20 rounded-xl p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-cyan-400">Informational</span>
-            <Info className="w-4 h-4 text-cyan-400" />
+            <span className="text-xs font-medium text-cyan-600 dark:text-cyan-400">Informational</span>
+            <Info className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
           </div>
-          <p className="text-3xl font-bold text-cyan-400 mt-2">{infoCount}</p>
+          <p className="text-3xl font-bold text-cyan-600 dark:text-cyan-400 mt-2">{infoCount}</p>
           <p className="text-xs text-slate-500 mt-1">Operational notifications</p>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800/60 rounded-xl p-5">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/60 rounded-xl p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-emerald-400">Resolved (Today)</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Resolved (Today)</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
           </div>
-          <p className="text-3xl font-bold text-emerald-400 mt-2">{resolvedCount}</p>
+          <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">{resolvedCount}</p>
           <p className="text-xs text-slate-500 mt-1">Closed incident cycles</p>
         </div>
       </div>
 
       {/* 24-Hour Alarm Activity Histogram */}
-      <div className="bg-slate-900 border border-slate-800/60 rounded-xl p-5">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/60 rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-cyan-400" />
-            <h3 className="text-sm font-semibold text-white">24-Hour Alarm Distribution</h3>
+            <Clock className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">24-Hour Alarm Distribution</h3>
           </div>
           <span className="text-xs text-slate-500 font-mono">14 Incidents / 24h</span>
         </div>
@@ -217,17 +282,17 @@ export default function AlarmsPage() {
                 <div 
                   style={{ height: `${height}px` }} 
                   className={`w-full rounded-t transition-all ${
-                    isHigh ? 'bg-red-500 hover:bg-red-400' : isMedium ? 'bg-amber-500 hover:bg-amber-400' : 'bg-slate-800 hover:bg-cyan-500'
+                    isHigh ? 'bg-red-500 hover:bg-red-400' : isMedium ? 'bg-amber-500 hover:bg-amber-400' : 'bg-slate-200 dark:bg-slate-800 hover:bg-cyan-500'
                   }`}
                 />
-                <div className="opacity-0 group-hover:opacity-100 absolute -top-8 px-2 py-0.5 bg-slate-950 border border-slate-700 rounded text-[10px] text-white whitespace-nowrap pointer-events-none transition-opacity z-10 font-mono">
+                <div className="opacity-0 group-hover:opacity-100 absolute -top-8 px-2 py-0.5 bg-slate-900 text-white border border-slate-700 rounded text-[10px] whitespace-nowrap pointer-events-none transition-opacity z-10 font-mono shadow-md">
                   {idx}:00 — {val} alarms
                 </div>
               </div>
             );
           })}
         </div>
-        <div className="flex justify-between text-[10px] text-slate-600 mt-2 font-mono">
+        <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-600 mt-2 font-mono">
           <span>00:00</span>
           <span>06:00</span>
           <span>12:00</span>
@@ -237,29 +302,29 @@ export default function AlarmsPage() {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-slate-900 border border-slate-800/60 rounded-xl p-4 flex flex-col md:flex-row gap-4 justify-between items-center">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/60 rounded-xl p-4 flex flex-col md:flex-row gap-4 justify-between items-center shadow-sm">
         <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search by alarm, asset, or device..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50"
+            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           {/* Status Tabs */}
-          <div className="flex rounded-lg bg-slate-950 border border-slate-800 p-1 text-xs">
+          <div className="flex rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-1 text-xs">
             {(['all', 'active', 'acknowledged', 'resolved'] as const).map((status) => (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1.5 rounded-md font-medium capitalize transition-colors ${
+                className={`px-3 py-1.5 rounded-md font-medium capitalize transition-colors cursor-pointer ${
                   statusFilter === status
-                    ? 'bg-cyan-500/10 text-cyan-400'
-                    : 'text-slate-500 hover:text-slate-300'
+                    ? 'bg-white dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
                 }`}
               >
                 {status}
@@ -271,7 +336,7 @@ export default function AlarmsPage() {
           <select
             value={severityFilter}
             onChange={(e) => setSeverityFilter(e.target.value as any)}
-            className="bg-slate-950 border border-slate-800 text-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-cyan-500/50"
+            className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-cyan-500/50"
           >
             <option value="all">All Severities</option>
             <option value="critical">Critical</option>
@@ -282,8 +347,8 @@ export default function AlarmsPage() {
       </div>
 
       {/* Alarms Feed List */}
-      <div className="bg-slate-900 border border-slate-800/60 rounded-xl overflow-hidden shadow-xl">
-        <div className="divide-y divide-slate-800/60">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/60 rounded-xl overflow-hidden shadow-sm dark:shadow-xl">
+        <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
           {filteredAlarms.map((alarm) => {
             const isCrit = alarm.severity === 'critical';
             const isWarn = alarm.severity === 'warning';
@@ -293,16 +358,16 @@ export default function AlarmsPage() {
             return (
               <div 
                 key={alarm.id} 
-                className={`p-5 transition-colors hover:bg-slate-800/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 ${
-                  isActive && isCrit ? 'bg-red-500/[0.02]' : ''
+                className={`p-5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 ${
+                  isActive && isCrit ? 'bg-red-500/[0.03]' : ''
                 }`}
               >
                 <div className="flex items-start gap-4">
                   {/* Severity Badge Indicator */}
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
-                    isCrit ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                    isWarn ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                    'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
+                    isCrit ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20' :
+                    isWarn ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20' :
+                    'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20'
                   }`}>
                     {isCrit ? (
                       <ShieldAlert className="w-5 h-5 animate-pulse" />
@@ -316,39 +381,39 @@ export default function AlarmsPage() {
                   {/* Alarm Details */}
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-bold text-white text-base">{alarm.title}</span>
+                      <span className="font-bold text-slate-900 dark:text-white text-base">{alarm.title}</span>
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                        isCrit ? 'bg-red-500/20 text-red-300' :
-                        isWarn ? 'bg-amber-500/20 text-amber-300' :
-                        'bg-cyan-500/20 text-cyan-300'
+                        isCrit ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300' :
+                        isWarn ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300' :
+                        'bg-cyan-100 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300'
                       }`}>
                         {alarm.severity}
                       </span>
                       <span className={`px-2 py-0.5 rounded text-[10px] font-medium capitalize ${
-                        isActive ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                        isAck ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                        'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                        isActive ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20' :
+                        isAck ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20' :
+                        'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20'
                       }`}>
                         {alarm.status}
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                      <span className="flex items-center gap-1 font-mono text-slate-500">
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                      <span className="flex items-center gap-1 font-mono text-slate-400 dark:text-slate-500">
                         {alarm.id}
                       </span>
                       <span>•</span>
                       <span className="flex items-center gap-1">
-                        <Cpu className="w-3.5 h-3.5 text-slate-500" />
+                        <Cpu className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                         {alarm.deviceName} ({alarm.deviceId})
                       </span>
                       <span>•</span>
                       <span className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-slate-500" />
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                         {alarm.asset}
                       </span>
                       <span>•</span>
-                      <span className="flex items-center gap-1 text-slate-500">
+                      <span className="flex items-center gap-1 text-slate-400 dark:text-slate-500">
                         <Clock className="w-3.5 h-3.5" />
                         {alarm.timestamp}
                       </span>

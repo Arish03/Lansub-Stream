@@ -4,6 +4,10 @@ import './globals.css';
 import Sidebar from '@/components/Sidebar';
 import TopBar from '@/components/TopBar';
 import { ThemeProvider } from '@/lib/theme';
+import { AuthProvider } from '@/lib/auth';
+import AppShell from '@/components/AppShell';
+
+import Script from 'next/script';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -20,7 +24,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" data-theme="dark" suppressHydrationWarning>
       <head>
-        <script
+        <Script
+          id="theme-initializer"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -43,15 +49,13 @@ export default function RootLayout({
         />
       </head>
       <body 
-        className={`${inter.className} flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen antialiased transition-colors duration-200`}
+        className={`${inter.className} bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen antialiased transition-colors duration-200`}
         suppressHydrationWarning
       >
         <ThemeProvider>
-          <Sidebar />
-          <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-            <TopBar />
-            <main className="flex-1 p-8 overflow-y-auto">{children}</main>
-          </div>
+          <AuthProvider>
+            <AppShell>{children}</AppShell>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

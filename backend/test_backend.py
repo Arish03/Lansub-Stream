@@ -242,8 +242,112 @@ async def run_tests():
                 "No historical telemetry records found."
             )
 
+        # -------------------------------
+        # 8. Device Templates
+        # -------------------------------
+        print("\n--- [8] Create Device Template ---")
+        tmpl_resp = await client.post(
+            "/v1/templates",
+            headers=headers,
+            json={
+                "name": "High-Temp Bearing Thermocouple",
+                "category": "Sensor",
+                "description": "Thermocouple schema for CNC spindles",
+                "parameters": [
+                    {"key": "temperature", "name": "Temperature", "type": "float", "unit": "°C"}
+                ]
+            }
+        )
+        print("Template status:", tmpl_resp.status_code)
+        assert tmpl_resp.status_code == 201
+
+        # -------------------------------
+        # 9. Industrial Asset Node
+        # -------------------------------
+        print("\n--- [9] Create Asset Node ---")
+        asset_resp = await client.post(
+            "/v1/assets",
+            headers=headers,
+            json={
+                "name": "CNC Milling Cell 01",
+                "type": "Equipment",
+                "criticality": "A",
+                "health_score": 96
+            }
+        )
+        print("Asset status:", asset_resp.status_code)
+        assert asset_resp.status_code == 201
+
+        # -------------------------------
+        # 10. Automation Rule & Alarm Evaluation
+        # -------------------------------
+        print("\n--- [10] Create Automation Rule ---")
+        rule_resp = await client.post(
+            "/v1/rules",
+            headers=headers,
+            json={
+                "name": "Spindle Overheat Emergency Interlock",
+                "scope": "Device",
+                "target_id": dev_key,
+                "parameter": "temperature",
+                "operator": ">",
+                "threshold": "75.0",
+                "unit": "°C",
+                "actions": [
+                    {"type": "alarm", "label": "CRITICAL Alarm", "detail": "Temperature Breach"}
+                ]
+            }
+        )
+        print("Rule status:", rule_resp.status_code)
+        assert rule_resp.status_code == 201
+        rule_data = rule_resp.json()
+
+        print("\n--- [11] Ingest Breaching Telemetry (Triggering Rule) ---")
+        breach_resp = await client.post(
+            "/v1/telemetry",
+            json={
+                "device_key": dev_key,
+                "payload": {
+                    "temperature": 89.2,
+                    "humidity": 45.0
+                }
+            }
+        )
+        print("Breach ingest status:", breach_resp.status_code)
+        assert breach_resp.status_code == 200
+
+        print("\n--- [12] Verify Automated Alarm Generation ---")
+        alarms_resp = await client.get(
+            "/v1/alarms?status=ACTIVE",
+            headers=headers
+        )
+        print("Alarms query status:", alarms_resp.status_code)
+        assert alarms_resp.status_code == 200
+        active_alarms = alarms_resp.json()
+        print(f"Active alarms found: {len(active_alarms)}")
+        assert len(active_alarms) >= 1
+        print(f"Triggered Alarm: '{active_alarms[0]['title']}' - {active_alarms[0]['message']}")
+
+        # -------------------------------
+        # 13. Telemetry Aggregation & Fleet KPIs
+        # -------------------------------
+        print("\n--- [13] Query Telemetry Aggregation & Fleet KPIs ---")
+        agg_resp = await client.get(
+            f"/v1/telemetry/aggregate?metric=temperature&device_key={dev_key}&limit=10"
+        )
+        print("Aggregation status:", agg_resp.status_code)
+        assert agg_resp.status_code == 200
+        agg_json = agg_resp.json()
+        print(f"Aggregation stats: Avg={agg_json['avg']}, Min={agg_json['min']}, Max={agg_json['max']}, Points={agg_json['count']}")
+
+        kpi_resp = await client.get("/v1/telemetry/kpis")
+        print("KPIs status:", kpi_resp.status_code)
+        assert kpi_resp.status_code == 200
+        kpi_json = kpi_resp.json()
+        print(f"Fleet KPIs: OEE={kpi_json['oee']}%, Availability={kpi_json['availability']}%, Telemetry Count={kpi_json['total_telemetry']}")
+
     print(
-        "\n[OK] ALL END-TO-END TESTS "
+        "\n[OK] ALL MULTI-PHASE END-TO-END TESTS "
         "PASSED SUCCESSFULLY!\n"
     )
 

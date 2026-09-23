@@ -1,97 +1,52 @@
 'use client';
 
-import { Plus, Cpu, ToggleRight, Video, MapPin, MoreHorizontal, Eye, Edit, Trash2, Copy } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  Plus, Cpu, ToggleRight, Video, MapPin, MoreHorizontal, Eye, Edit, Trash2, Copy, X, Sparkles 
+} from 'lucide-react';
+import { fetchTemplates, createTemplate, deleteTemplate, TemplateData } from '@/lib/api';
 
-const TEMPLATES = [
+const DEFAULT_TEMPLATES = [
   {
-    id: 1,
-    name: 'Temperature Sensor',
-    type: 'Sensor',
-    icon: '🌡️',
-    color: 'from-orange-500 to-red-500',
-    attributes: [
-      { name: 'temperature', type: 'float', unit: '°C' },
-      { name: 'humidity', type: 'float', unit: '%' },
-      { name: 'pressure', type: 'float', unit: 'hPa' },
-      { name: 'battery', type: 'float', unit: '%' },
+    id: 'TPL-001',
+    name: 'Bearing Temperature Sensor',
+    category: 'Sensor',
+    description: 'Monitors industrial bearing surface and core temperature.',
+    parameters: [
+      { key: 'temperature', name: 'Temperature', type: 'float', unit: '°C' },
+      { key: 'humidity', name: 'Humidity', type: 'float', unit: '%' },
+      { key: 'vibration', name: 'Vibration', type: 'float', unit: 'mm/s' },
+      { key: 'battery', name: 'Battery Level', type: 'float', unit: '%' },
     ],
-    devices: 24,
-    lastModified: '2 days ago',
+    devicesCount: 18,
+    created_at: '2 days ago',
   },
   {
-    id: 2,
-    name: 'Motor Controller',
-    type: 'Control',
-    icon: '⚙️',
-    color: 'from-blue-500 to-indigo-500',
-    attributes: [
-      { name: 'start', type: 'command', unit: '—' },
-      { name: 'stop', type: 'command', unit: '—' },
-      { name: 'speed', type: 'integer', unit: 'RPM' },
-      { name: 'direction', type: 'enum', unit: 'CW/CCW' },
+    id: 'TPL-002',
+    name: 'Spindle Motor Controller',
+    category: 'Control',
+    description: 'Controls high-speed CNC spindle velocity and direction.',
+    parameters: [
+      { key: 'speed', name: 'Speed', type: 'integer', unit: 'RPM' },
+      { key: 'direction', name: 'Direction', type: 'string', unit: 'CW/CCW' },
+      { key: 'torque', name: 'Torque', type: 'float', unit: 'Nm' },
+      { key: 'load', name: 'Motor Load', type: 'float', unit: '%' },
     ],
-    devices: 8,
-    lastModified: '5 days ago',
+    devicesCount: 8,
+    created_at: '5 days ago',
   },
   {
-    id: 3,
-    name: 'Safety Camera',
-    type: 'CCTV',
-    icon: '📹',
-    color: 'from-emerald-500 to-teal-500',
-    attributes: [
-      { name: 'person_count', type: 'integer', unit: '—' },
-      { name: 'helmet_detected', type: 'boolean', unit: '—' },
-      { name: 'restricted_zone', type: 'boolean', unit: '—' },
-      { name: 'anomaly', type: 'boolean', unit: '—' },
+    id: 'TPL-003',
+    name: 'Assembly Safety Camera',
+    category: 'CCTV',
+    description: 'Vision stream monitoring PPE compliance and worker perimeter.',
+    parameters: [
+      { key: 'person_count', name: 'Worker Count', type: 'integer', unit: '—' },
+      { key: 'helmet_detected', name: 'Helmet Status', type: 'boolean', unit: '—' },
+      { key: 'zone_breach', name: 'Perimeter Breach', type: 'boolean', unit: '—' },
     ],
-    devices: 12,
-    lastModified: '1 week ago',
-  },
-  {
-    id: 4,
-    name: 'Fleet Vehicle',
-    type: 'Navigation',
-    icon: '🚛',
-    color: 'from-purple-500 to-pink-500',
-    attributes: [
-      { name: 'latitude', type: 'float', unit: '°' },
-      { name: 'longitude', type: 'float', unit: '°' },
-      { name: 'speed', type: 'float', unit: 'km/h' },
-      { name: 'fuel_level', type: 'float', unit: '%' },
-    ],
-    devices: 6,
-    lastModified: '3 days ago',
-  },
-  {
-    id: 5,
-    name: 'Power Meter',
-    type: 'Sensor',
-    icon: '⚡',
-    color: 'from-amber-500 to-yellow-500',
-    attributes: [
-      { name: 'voltage', type: 'float', unit: 'V' },
-      { name: 'current', type: 'float', unit: 'A' },
-      { name: 'power_kw', type: 'float', unit: 'kW' },
-      { name: 'energy_kwh', type: 'float', unit: 'kWh' },
-    ],
-    devices: 16,
-    lastModified: '1 day ago',
-  },
-  {
-    id: 6,
-    name: 'Vibration Sensor',
-    type: 'Sensor',
-    icon: '📳',
-    color: 'from-cyan-500 to-sky-500',
-    attributes: [
-      { name: 'vibration_x', type: 'float', unit: 'mm/s' },
-      { name: 'vibration_y', type: 'float', unit: 'mm/s' },
-      { name: 'vibration_z', type: 'float', unit: 'mm/s' },
-      { name: 'rms', type: 'float', unit: 'mm/s' },
-    ],
-    devices: 10,
-    lastModified: '4 days ago',
+    devicesCount: 12,
+    created_at: '1 week ago',
   },
 ];
 
@@ -103,94 +58,288 @@ const TYPE_BADGES: Record<string, { label: string; icon: React.ComponentType<{ c
 };
 
 export default function TemplatesPage() {
+  const [templates, setTemplates] = useState<any[]>(DEFAULT_TEMPLATES);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // Modal Form State
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('Sensor');
+  const [description, setDescription] = useState('');
+  const [paramKey, setParamKey] = useState('');
+  const [paramUnit, setParamUnit] = useState('°C');
+  const [paramList, setParamList] = useState<Array<{ key: string; name: string; type: string; unit: string }>>([]);
+
+  const loadTemplates = async () => {
+    const data = await fetchTemplates();
+    if (data && data.length > 0) {
+      setTemplates(data.map(d => ({
+        id: d.id,
+        name: d.name,
+        category: d.category || 'Sensor',
+        description: d.description || 'Device template schema',
+        parameters: d.parameters || [],
+        devicesCount: 0,
+        created_at: d.created_at ? new Date(d.created_at).toLocaleDateString() : 'Recent',
+      })));
+    }
+  };
+
+  useEffect(() => {
+    loadTemplates();
+  }, []);
+
+  const handleAddParam = () => {
+    if (!paramKey.trim()) return;
+    setParamList([
+      ...paramList,
+      { key: paramKey.trim().toLowerCase(), name: paramKey.trim(), type: 'float', unit: paramUnit }
+    ]);
+    setParamKey('');
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    const res = await createTemplate({
+      name,
+      category,
+      description,
+      parameters: paramList.length > 0 ? paramList : [
+        { key: 'metric_val', name: 'Metric', type: 'float', unit: 'units' }
+      ],
+    });
+
+    if (res) {
+      setTemplates(prev => [{
+        id: res.id,
+        name: res.name,
+        category: res.category,
+        description: res.description,
+        parameters: res.parameters,
+        devicesCount: 0,
+        created_at: 'Just now',
+      }, ...prev]);
+    }
+
+    setIsCreateModalOpen(false);
+    setName('');
+    setDescription('');
+    setParamList([]);
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteTemplate(id);
+    setTemplates(templates.filter(t => t.id !== id));
+  };
+
+  const filtered = selectedCategory === 'All' 
+    ? templates 
+    : templates.filter(t => t.category === selectedCategory);
+
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-6 max-w-7xl mx-auto p-2 sm:p-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Device Templates</h1>
-          <p className="text-sm text-slate-500 mt-1">Create and manage device schemas for your IoT fleet</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Device Templates</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Define schemas, parameter units, and controls for your IoT hardware fleet.</p>
         </div>
-        <button className="flex items-center gap-2 h-9 px-4 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-sm font-semibold hover:shadow-lg hover:shadow-cyan-500/20 transition-all">
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="flex items-center gap-2 h-10 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-sm font-semibold shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
+        >
           <Plus className="w-4 h-4" />
-          New Template
+          <span>New Template</span>
         </button>
       </div>
 
-      {/* Template Type Filter */}
-      <div className="flex items-center gap-2">
-        <button className="px-3 py-1.5 rounded-lg text-xs font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">All</button>
-        {Object.entries(TYPE_BADGES).map(([key, badge]) => (
-          <button key={key} className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 transition-all">
-            {badge.label}
+      {/* Category Filter Pills */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        {['All', 'Sensor', 'Control', 'CCTV', 'Navigation'].map(cat => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+              selectedCategory === cat
+                ? 'bg-cyan-50 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-500/30 font-semibold'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200 shadow-xs'
+            }`}
+          >
+            {cat}
           </button>
         ))}
       </div>
 
-      {/* Template Cards */}
-      <div className="grid grid-cols-3 gap-4">
-        {TEMPLATES.map(template => {
-          const badge = TYPE_BADGES[template.type];
+      {/* Grid of Templates */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {filtered.map(template => {
+          const badge = TYPE_BADGES[template.category] || TYPE_BADGES['Sensor'];
           const BadgeIcon = badge.icon;
           return (
-            <div key={template.id} className="bg-slate-900 border border-slate-800/60 rounded-xl overflow-hidden hover:border-slate-700/60 transition-all group">
-              {/* Card Header */}
-              <div className={`h-1.5 bg-gradient-to-r ${template.color}`} />
-              <div className="p-5">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{template.icon}</span>
-                    <div>
-                      <h3 className="text-sm font-semibold text-white">{template.name}</h3>
-                      <div className={`inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded text-[10px] font-medium border ${badge.className}`}>
-                        <BadgeIcon className="w-2.5 h-2.5" />
-                        {badge.label}
-                      </div>
+            <div key={template.id} className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 hover:border-cyan-500/30 dark:hover:border-slate-700 transition-all flex flex-col justify-between group shadow-sm dark:shadow-lg">
+              <div>
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">{template.name}</h3>
+                    <div className={`inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-medium border ${badge.className}`}>
+                      <BadgeIcon className="w-3 h-3" />
+                      <span>{badge.label}</span>
                     </div>
                   </div>
-                  <button className="p-1.5 rounded-md text-slate-600 hover:text-slate-400 hover:bg-slate-800/50 opacity-0 group-hover:opacity-100 transition-all">
-                    <MoreHorizontal className="w-4 h-4" />
+                  <button 
+                    onClick={() => handleDelete(template.id)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer"
+                    title="Delete Template"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
 
-                {/* Attributes */}
+                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-4">{template.description}</p>
+
+                {/* Parameters list */}
                 <div className="space-y-1.5 mb-4">
-                  {template.attributes.map(attr => (
-                    <div key={attr.name} className="flex items-center justify-between py-1 px-2.5 rounded bg-slate-800/30 text-xs">
-                      <span className="text-slate-300 font-mono">{attr.name}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-slate-600">{attr.type}</span>
-                        <span className="text-slate-700">•</span>
-                        <span className="text-slate-500">{attr.unit}</span>
+                  <div className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Defined Metrics</div>
+                  {(template.parameters || []).slice(0, 4).map((attr: any) => (
+                    <div key={attr.key || attr.name} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/60 text-xs">
+                      <span className="text-slate-700 dark:text-slate-300 font-mono font-medium">{attr.name || attr.key}</span>
+                      <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 font-mono text-[11px]">
+                        <span>{attr.type}</span>
+                        {attr.unit && <span className="px-1 py-0.2 rounded bg-slate-200 dark:bg-slate-800 text-cyan-700 dark:text-cyan-400">{attr.unit}</span>}
                       </div>
                     </div>
                   ))}
+                  {(template.parameters || []).length > 4 && (
+                    <div className="text-[11px] text-slate-400 dark:text-slate-500 text-center pt-1">+ {template.parameters.length - 4} more parameters</div>
+                  )}
                 </div>
+              </div>
 
-                {/* Footer */}
-                <div className="flex items-center justify-between pt-3 border-t border-slate-800/40">
-                  <div className="flex items-center gap-3 text-[10px] text-slate-500">
-                    <span>{template.devices} devices</span>
-                    <span>•</span>
-                    <span>{template.lastModified}</span>
-                  </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                    <button className="p-1 rounded text-slate-600 hover:text-cyan-400 hover:bg-slate-800/50" title="View">
-                      <Eye className="w-3.5 h-3.5" />
-                    </button>
-                    <button className="p-1 rounded text-slate-600 hover:text-blue-400 hover:bg-slate-800/50" title="Edit">
-                      <Edit className="w-3.5 h-3.5" />
-                    </button>
-                    <button className="p-1 rounded text-slate-600 hover:text-slate-300 hover:bg-slate-800/50" title="Clone">
-                      <Copy className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/80 text-xs text-slate-400 dark:text-slate-500">
+                <span>{template.devicesCount || 0} Connected Devices</span>
+                <span>{template.created_at}</span>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Create Modal */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h2 className="text-lg font-semibold text-white">Create Device Template</h2>
+              <button onClick={() => setIsCreateModalOpen(false)} className="p-1 text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Template Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Hydraulic Pressure Sensor"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  className="w-full h-10 px-3.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Category</label>
+                  <select
+                    value={category}
+                    onChange={e => setCategory(e.target.value)}
+                    className="w-full h-10 px-3 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
+                  >
+                    <option value="Sensor">Sensor</option>
+                    <option value="Control">Control</option>
+                    <option value="CCTV">CCTV</option>
+                    <option value="Navigation">Navigation</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Description</label>
+                  <input
+                    type="text"
+                    placeholder="Short description"
+                    value={description}
+                    onChange={e => setDescription(e.target.value)}
+                    className="w-full h-10 px-3.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+              </div>
+
+              {/* Parameter Builder */}
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Add Metric / Parameter</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Parameter name (e.g. pressure)"
+                    value={paramKey}
+                    onChange={e => setParamKey(e.target.value)}
+                    className="flex-1 h-9 px-3 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Unit (e.g. bar, °C)"
+                    value={paramUnit}
+                    onChange={e => setParamUnit(e.target.value)}
+                    className="w-24 h-9 px-2.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddParam}
+                    className="px-3 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium cursor-pointer"
+                  >
+                    Add
+                  </button>
+                </div>
+
+                {paramList.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {paramList.map((p, idx) => (
+                      <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-950/60 border border-cyan-800 text-xs text-cyan-300">
+                        <span>{p.name} ({p.unit})</span>
+                        <button
+                          type="button"
+                          onClick={() => setParamList(paramList.filter((_, i) => i !== idx))}
+                          className="hover:text-red-400"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white text-xs font-semibold shadow-lg shadow-cyan-500/20 cursor-pointer"
+                >
+                  Create Template
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

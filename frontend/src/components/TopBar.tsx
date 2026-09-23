@@ -1,17 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bell, Search, Plus, Sun, Moon } from 'lucide-react';
+import { Bell, Search, Plus, Sun, Moon, LogOut } from 'lucide-react';
 import { useTelemetrySocket } from '@/lib/useSocket';
 import { checkBackendHealth, HealthStatus } from '@/lib/api';
 import { useTheme } from '@/lib/theme';
+import { useAuth } from '@/lib/auth';
 
 export default function TopBar({ onNewDeviceClick }: { onNewDeviceClick?: () => void }) {
   const { isConnected } = useTelemetrySocket();
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
+  const [mounted, setMounted] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+    try {
+      setIsDemoMode(localStorage.getItem('lansub_offline_mode') === 'true');
+    } catch {}
+
     checkBackendHealth().then(setHealth);
     const interval = setInterval(() => {
       checkBackendHealth().then(setHealth);
@@ -46,6 +55,11 @@ export default function TopBar({ onNewDeviceClick }: { onNewDeviceClick?: () => 
               PG+Redis OK
             </span>
           )}
+          {mounted && isDemoMode && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 ml-1">
+              Demo Mode
+            </span>
+          )}
         </div>
       </div>
 
@@ -66,18 +80,18 @@ export default function TopBar({ onNewDeviceClick }: { onNewDeviceClick?: () => 
           type="button"
           onClick={toggleTheme}
           className="flex items-center gap-2 h-8 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200/70 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-medium transition-all cursor-pointer shadow-sm group select-none"
-          title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
-          aria-label={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+          title={`Switch to ${mounted && theme === 'light' ? 'Dark' : 'Light'} Mode`}
+          aria-label={`Switch to ${mounted && theme === 'light' ? 'Dark' : 'Light'} Mode`}
         >
           <div className="relative w-4 h-4 flex items-center justify-center">
-            {theme === 'dark' ? (
-              <Moon className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform" />
-            ) : (
+            {mounted && theme === 'light' ? (
               <Sun className="w-3.5 h-3.5 text-amber-500 group-hover:rotate-45 transition-transform" />
+            ) : (
+              <Moon className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform" />
             )}
           </div>
           <span className="hidden sm:inline font-medium text-[11px] tracking-wide">
-            {theme === 'dark' ? 'Dark' : 'Light'}
+            {mounted && theme === 'light' ? 'Light' : 'Dark'}
           </span>
         </button>
 
@@ -92,11 +106,22 @@ export default function TopBar({ onNewDeviceClick }: { onNewDeviceClick?: () => 
 
         <div className="w-px h-6 bg-slate-200 dark:bg-slate-800/60" />
 
-        <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/40">
+        <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/40">
           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shadow-xs">
-            LS
+            {user?.email ? user.email.slice(0, 2).toUpperCase() : 'LS'}
           </div>
-          <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Operator</span>
+          <span className="text-xs font-medium text-slate-700 dark:text-slate-300 max-w-[140px] truncate" title={user?.email || 'Operator'}>
+            {user?.email || 'Operator'}
+          </span>
+          <button
+            type="button"
+            onClick={logout}
+            className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-red-500 transition-colors cursor-pointer ml-1"
+            title="Sign Out"
+            aria-label="Sign Out"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     </header>
