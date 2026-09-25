@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import TopBar from '@/components/TopBar';
 import { ThemeProvider } from '@/lib/theme';
 import { AuthProvider } from '@/lib/auth';
+import { ViewModeProvider } from '@/lib/viewMode';
 import AppShell from '@/components/AppShell';
 
 import Script from 'next/script';
@@ -54,7 +55,9 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <AuthProvider>
-            <AppShell>{children}</AppShell>
+            <ViewModeProvider>
+              <AppShell>{children}</AppShell>
+            </ViewModeProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

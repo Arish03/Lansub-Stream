@@ -125,3 +125,18 @@ class Asset(Base):
     user = relationship("User")
     parent = relationship("Asset", remote_side=[id], backref="children")
 
+
+class Dashboard(Base):
+    __tablename__ = "dashboards"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    is_default = Column(Boolean, default=False)
+    layout = Column(JSONB, default=list)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    user = relationship("User")
+

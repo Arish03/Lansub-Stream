@@ -6,12 +6,15 @@ import { useTelemetrySocket } from '@/lib/useSocket';
 import { checkBackendHealth, HealthStatus } from '@/lib/api';
 import { useTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
+import { useViewMode } from '@/lib/viewMode';
+import { SlidersHorizontal, Sparkles } from 'lucide-react';
 
 export default function TopBar({ onNewDeviceClick }: { onNewDeviceClick?: () => void }) {
   const { isConnected } = useTelemetrySocket();
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+  const { mode, isSimple, toggleMode } = useViewMode();
   const [mounted, setMounted] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
 
@@ -74,6 +77,23 @@ export default function TopBar({ onNewDeviceClick }: { onNewDeviceClick?: () => 
             New Device
           </button>
         )}
+
+        {/* Progressive Disclosure: Simple vs Industrial Mode Toggle */}
+        <button
+          type="button"
+          onClick={toggleMode}
+          className={`flex items-center gap-1.5 h-8 px-2.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer shadow-xs select-none ${
+            isSimple
+              ? 'bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300'
+              : 'bg-cyan-50 hover:bg-cyan-100/80 dark:bg-cyan-950/40 dark:hover:bg-cyan-900/50 border-cyan-200 dark:border-cyan-800/60 text-cyan-800 dark:text-cyan-300'
+          }`}
+          title={`Click to switch to ${isSimple ? 'Advanced / Industrial' : 'Simple & Clean'} Mode`}
+        >
+          <span className={`w-2 h-2 rounded-full ${isSimple ? 'bg-emerald-500 animate-pulse' : 'bg-cyan-500'}`} />
+          <span className="hidden sm:inline font-medium text-[11px] tracking-wide">
+            {isSimple ? 'Simple View' : 'Industrial View'}
+          </span>
+        </button>
 
         {/* Theme Toggle Button */}
         <button

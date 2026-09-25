@@ -98,3 +98,16 @@ CREATE TABLE IF NOT EXISTS assets (
 CREATE INDEX IF NOT EXISTS idx_assets_user_id ON assets(user_id);
 CREATE INDEX IF NOT EXISTS idx_assets_parent_id ON assets(parent_id);
 
+-- dashboards: user-customized visual layouts with widgets
+CREATE TABLE IF NOT EXISTS dashboards (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR NOT NULL,
+    description TEXT,
+    is_default BOOLEAN DEFAULT false,
+    layout JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP DEFAULT now(),
+    updated_at TIMESTAMP DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_dashboards_user_id ON dashboards(user_id);
+

@@ -30,12 +30,19 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { 
+    name: 'Dashboard', href: '/', icon: LayoutDashboard,
+    children: [
+      { name: 'Live Overview', href: '/' },
+      { name: 'Dashboard Builder', href: '/builder' },
+    ]
+  },
   { 
     name: 'Devices', href: '/devices', icon: Radio,
     children: [
-      { name: 'Device Templates', href: '/templates' },
       { name: 'Device Management', href: '/devices' },
+      { name: 'Connect Device', href: '/devices/connect' },
+      { name: 'Device Templates', href: '/templates' },
       { name: 'Digital Twins', href: '/twins' },
     ]
   },

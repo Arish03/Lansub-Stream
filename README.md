@@ -46,6 +46,8 @@ flowchart TD
   - Standalone execution support (`python -m app.simulator`).
 - **Modern Next.js 16 Operator Dashboard**:
   - Built with React 19, TypeScript, Tailwind CSS v4, and Lucide icons.
+  - **Zero-Code Dashboard Builder**: Modular visual canvas to create bespoke monitoring screens with radial gauges, sparkline trends, KPI stat cards, actuator switches, and multi-sensor bars.
+  - **Hardware Connection Wizard**: 4-step commissioning flow generating MQTT / REST credentials with code snippets (cURL, Python, Arduino ESP32, Node.js) and live handshake verification.
   - **Dark & Light Mode Switcher**: Integrated in the Top Navigation bar with `localStorage` persistence and zero-flicker hydration.
   - Dedicated operational views for **Digital Twins**, **Devices**, **Analytics**, **Alarms**, **Rules**, **Pipelines**, **CCTV / Vision**, and **Edge Nodes**.
 - **Containerized & Non-Conflicting**:

@@ -36,6 +36,7 @@ class DeviceOut(DeviceBase):
     user_id: uuid.UUID
     device_key: str
     mqtt_username: str
+    mqtt_password: Optional[str] = None
     template: str
     created_at: Optional[datetime] = None
     last_seen_at: Optional[datetime] = None
@@ -160,6 +161,33 @@ class AssetOut(BaseModel):
     health_score: int
     metadata_json: dict[str, Any] = Field(default_factory=dict)
     created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+# Dashboard Schemas
+class DashboardCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    is_default: bool = False
+    layout: list[dict[str, Any]] = Field(default_factory=list)
+
+class DashboardUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    is_default: Optional[bool] = None
+    layout: Optional[list[dict[str, Any]]] = None
+
+class DashboardOut(BaseModel):
+    id: uuid.UUID | str
+    user_id: uuid.UUID | str
+    name: str
+    description: Optional[str] = None
+    is_default: bool = False
+    layout: list[dict[str, Any]] = Field(default_factory=list)
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
