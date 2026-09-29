@@ -1,147 +1,117 @@
 'use client';
 
+import { Eye, BarChart3, Layers, Zap, ArrowRight, Bell } from 'lucide-react';
 import { useState } from 'react';
-import { 
-  Eye, ShieldCheck, Users, AlertTriangle, CheckCircle2, 
-  Activity, BarChart2, Radio, Calendar, Filter
-} from 'lucide-react';
 
-interface Incident {
-  id: string;
-  time: string;
-  camera: string;
-  type: string;
-  confidence: string;
-  severity: 'critical' | 'warning' | 'info';
-}
-
-const RECENT_INCIDENTS: Incident[] = [
+const UPCOMING_FEATURES = [
   {
-    id: 'INC-901',
-    time: '3 mins ago',
-    camera: 'CAM-01 (Assembly Cell 01)',
-    type: 'Missing Safety Helmet',
-    confidence: '98.2%',
-    severity: 'critical'
+    icon: Eye,
+    title: 'Object & Defect Detection',
+    description: 'Real-time YOLOv8 inference on production line camera feeds for surface defect and foreign object detection.',
   },
   {
-    id: 'INC-902',
-    time: '18 mins ago',
-    camera: 'CAM-03 (Forklift Corridor)',
-    type: 'Pedestrian in Forklift Transit Lane',
-    confidence: '95.6%',
-    severity: 'warning'
+    icon: BarChart3,
+    title: 'Vision Analytics Dashboard',
+    description: 'Track detection event rates, false positive trends, and model confidence scores over time with interactive charts.',
   },
   {
-    id: 'INC-903',
-    time: '1 hr ago',
-    camera: 'CAM-04 (Perimeter Dock)',
-    type: 'Unauthorized Entry after hours',
-    confidence: '99.1%',
-    severity: 'critical'
+    icon: Layers,
+    title: 'Multi-Camera Scene Fusion',
+    description: 'Correlate events across multiple camera angles to reconstruct incident timelines and reduce blind spots.',
   },
   {
-    id: 'INC-904',
-    time: '2 hrs ago',
-    camera: 'CAM-02 (Machining Bay)',
-    type: 'Safety Shield Gate Interlock Open',
-    confidence: '99.8%',
-    severity: 'warning'
-  }
+    icon: Zap,
+    title: 'Edge-Accelerated Inference',
+    description: 'Run vision models on NVIDIA Jetson or Coral TPU edge devices for sub-20ms latency without cloud dependency.',
+  },
 ];
 
-export default function VideoAnalyticsPage() {
+export default function VisionAnalyticsPage() {
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleNotify = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email.trim()) {
+      setSubmitted(true);
+      setEmail('');
+    }
+  };
+
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-cyan-400 uppercase tracking-wider mb-1">
-            <Eye className="w-3.5 h-3.5" /> Edge Vision Analytics
+    <div className="min-h-[80vh] flex flex-col items-center justify-center px-4 py-16">
+      {/* Badge */}
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-500 dark:text-amber-400 text-xs font-semibold uppercase tracking-widest mb-6">
+        <Eye className="w-3.5 h-3.5" />
+        Computer Vision Analytics
+      </div>
+
+      {/* Heading */}
+      <h1 className="text-4xl sm:text-5xl font-bold text-center text-slate-900 dark:text-white tracking-tight mb-4">
+        Coming{' '}
+        <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+          Soon
+        </span>
+      </h1>
+      <p className="text-base text-slate-500 dark:text-slate-400 text-center max-w-xl mb-12">
+        Video Analytics is under development. Detect defects, track objects, and fuse multi-camera scene data with edge-accelerated AI inference — all from this dashboard.
+      </p>
+
+      {/* Animated icon ring */}
+      <div className="relative w-32 h-32 mb-14">
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-600/10 animate-pulse" />
+        <div className="absolute inset-3 rounded-full bg-gradient-to-br from-amber-500/15 to-orange-600/10 animate-pulse [animation-delay:300ms]" />
+        <div className="absolute inset-6 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-xl">
+          <Eye className="w-10 h-10 text-amber-500 dark:text-amber-400" />
+        </div>
+      </div>
+
+      {/* Upcoming features grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl mb-12">
+        {UPCOMING_FEATURES.map(({ icon: Icon, title, description }) => (
+          <div
+            key={title}
+            className="flex items-start gap-4 p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/70 shadow-sm hover:border-amber-500/30 transition-all"
+          >
+            <div className="w-9 h-9 shrink-0 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 dark:text-amber-400">
+              <Icon className="w-[18px] h-[18px]" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-0.5">{title}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{description}</p>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Computer Vision Analytics</h1>
-          <p className="text-sm text-slate-400 mt-1">
-            PPE compliance inspection, pedestrian collision prevention, defect counting, and plant heatmaps.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">
-            96.8% PPE Compliance Rate
-          </span>
-        </div>
+        ))}
       </div>
 
-      {/* Primary KPI Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-lg">
-          <span className="text-xs font-medium text-slate-400">Total Persons Detected</span>
-          <p className="text-3xl font-bold text-white mt-1">28</p>
-          <p className="text-xs text-slate-500 mt-1">Across 4 camera sectors</p>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-lg">
-          <span className="text-xs font-medium text-slate-400">Helmet Compliance</span>
-          <p className="text-3xl font-bold text-emerald-400 mt-1">96.8%</p>
-          <p className="text-xs text-slate-500 mt-1">27 / 28 workers compliant</p>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-lg">
-          <span className="text-xs font-medium text-slate-400">Forklifts Active</span>
-          <p className="text-3xl font-bold text-cyan-400 mt-1">3</p>
-          <p className="text-xs text-slate-500 mt-1">Speed compliance 100% (&lt;10km/h)</p>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-lg">
-          <span className="text-xs font-medium text-slate-400">Today's Safety Incidents</span>
-          <p className="text-3xl font-bold text-amber-400 mt-1">4</p>
-          <p className="text-xs text-slate-500 mt-1">Auto-logged with video snapshot</p>
-        </div>
-      </div>
-
-      {/* Incident Event Stream */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h2 className="font-semibold text-white flex items-center gap-2">
-            <Activity className="w-4 h-4 text-cyan-400" /> Real-Time CV Incident Stream
-          </h2>
-          <span className="text-xs text-slate-400 font-mono">Model: YOLOv8-Safety-Industrial</span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="text-slate-500 uppercase bg-slate-950/40 border-b border-slate-800/60">
-              <tr>
-                <th className="py-2.5 px-3">Incident ID</th>
-                <th className="py-2.5 px-3">Camera Sector</th>
-                <th className="py-2.5 px-3">Detected Anomaly</th>
-                <th className="py-2.5 px-3">Confidence</th>
-                <th className="py-2.5 px-3">Timestamp</th>
-                <th className="py-2.5 px-3 text-right">Severity</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/40 text-slate-300">
-              {RECENT_INCIDENTS.map((inc) => (
-                <tr key={inc.id} className="hover:bg-slate-800/30 transition-colors">
-                  <td className="py-3 px-3 font-mono text-cyan-400 font-medium">{inc.id}</td>
-                  <td className="py-3 px-3 text-slate-200">{inc.camera}</td>
-                  <td className="py-3 px-3 font-medium text-white">{inc.type}</td>
-                  <td className="py-3 px-3 font-mono text-slate-400">{inc.confidence}</td>
-                  <td className="py-3 px-3 text-slate-500 whitespace-nowrap">{inc.time}</td>
-                  <td className="py-3 px-3 text-right">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                      inc.severity === 'critical'
-                        ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                    }`}>
-                      {inc.severity.toUpperCase()}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {/* Notify form */}
+      <div className="w-full max-w-md">
+        {submitted ? (
+          <div className="flex items-center justify-center gap-2.5 px-6 py-4 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 text-sm font-medium">
+            <Bell className="w-4 h-4" />
+            You'll be notified when Video Analytics launches!
+          </div>
+        ) : (
+          <form onSubmit={handleNotify} className="flex gap-2">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              required
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
+            />
+            <button
+              type="submit"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white text-sm font-semibold shadow-lg shadow-amber-500/20 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+            >
+              Notify Me <ArrowRight className="w-4 h-4" />
+            </button>
+          </form>
+        )}
+        <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-3">
+          No spam. We'll only notify you when this feature is ready.
+        </p>
       </div>
     </div>
   );

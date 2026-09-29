@@ -1,4 +1,29 @@
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/v1';
+﻿export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/v1';
+// Ordered candidate bases: configured URL first, then local-dev fallbacks (deduped).
+const CANDIDATE_BASES: string[] = [
+  process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/v1',
+  'http://localhost:8501/v1',
+  'http://127.0.0.1:8501/v1',
+  'http://localhost:8000/v1',
+  'http://127.0.0.1:8000/v1',
+].filter((v, i, a) => a.indexOf(v) === i);
+
+/**
+ * Resilient fetch: tries each candidate base URL in order.
+ * Hard network errors ("Failed to fetch") advance to the next candidate.
+ * HTTP 4xx/5xx from the first reachable server are returned as-is.
+ */
+export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  let lastError: unknown;
+  for (const base of CANDIDATE_BASES) {
+    try {
+      return await fetch(`${base}${path}`, init);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError;
+}
 export const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || 'ws://127.0.0.1:8000/ws';
 
 export interface DeviceData {
@@ -39,7 +64,7 @@ export async function getAuthToken(): Promise<string> {
 
 export async function checkBackendHealth(): Promise<HealthStatus> {
   try {
-    const res = await fetch(`${API_BASE}/health`, { cache: 'no-store' });
+    const res = await apiFetch(`/health`, { cache: 'no-store' });
     if (res.ok) {
       return await res.json();
     }
@@ -52,7 +77,7 @@ export async function checkBackendHealth(): Promise<HealthStatus> {
 export async function fetchDevices(): Promise<DeviceData[]> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/devices`, {
+    const res = await apiFetch(`/devices`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -75,7 +100,7 @@ export async function fetchDevices(): Promise<DeviceData[]> {
 export async function registerDevice(name: string, template: string = 'generic-sensor'): Promise<DeviceData | null> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/devices`, {
+    const res = await apiFetch(`/devices`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -96,7 +121,7 @@ export async function registerDevice(name: string, template: string = 'generic-s
 export async function removeDevice(deviceId: string): Promise<boolean> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/devices/${deviceId}`, {
+    const res = await apiFetch(`/devices/${deviceId}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -112,7 +137,7 @@ export async function removeDevice(deviceId: string): Promise<boolean> {
 export async function fetchHistoricalTelemetry(deviceId: string, limit: number = 50): Promise<TelemetryRecord[]> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/devices/${deviceId}/telemetry?limit=${limit}`, {
+    const res = await apiFetch(`/devices/${deviceId}/telemetry?limit=${limit}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -131,7 +156,7 @@ export async function fetchHistoricalTelemetry(deviceId: string, limit: number =
 export async function sendCommand(deviceId: string, action: string, target?: string, value?: any): Promise<boolean> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/devices/${deviceId}/commands`, {
+    const res = await apiFetch(`/devices/${deviceId}/commands`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -148,7 +173,7 @@ export async function sendCommand(deviceId: string, action: string, target?: str
 
 export async function sendTelemetryPayload(deviceKey: string, payload: Record<string, any>): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE}/telemetry`, {
+    const res = await apiFetch(`/telemetry`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ device_key: deviceKey, payload }),
@@ -197,7 +222,7 @@ export interface AlarmData {
 export async function fetchRules(): Promise<RuleData[]> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/rules`, {
+    const res = await apiFetch(`/rules`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
     });
@@ -211,7 +236,7 @@ export async function fetchRules(): Promise<RuleData[]> {
 export async function createRule(rule: Partial<RuleData>): Promise<RuleData | null> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/rules`, {
+    const res = await apiFetch(`/rules`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -229,7 +254,7 @@ export async function createRule(rule: Partial<RuleData>): Promise<RuleData | nu
 export async function toggleRule(ruleId: string): Promise<RuleData | null> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/rules/${ruleId}/toggle`, {
+    const res = await apiFetch(`/rules/${ruleId}/toggle`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -243,7 +268,7 @@ export async function toggleRule(ruleId: string): Promise<RuleData | null> {
 export async function deleteRule(ruleId: string): Promise<boolean> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/rules/${ruleId}`, {
+    const res = await apiFetch(`/rules/${ruleId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -257,8 +282,8 @@ export async function deleteRule(ruleId: string): Promise<boolean> {
 export async function fetchAlarms(status?: string): Promise<AlarmData[]> {
   try {
     const token = await getAuthToken();
-    const url = status ? `${API_BASE}/alarms?status=${status}` : `${API_BASE}/alarms`;
-    const res = await fetch(url, {
+    const path = status ? /alarms?status=\ : '/alarms';
+    const res = await apiFetch(path, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
     });
@@ -272,7 +297,7 @@ export async function fetchAlarms(status?: string): Promise<AlarmData[]> {
 export async function acknowledgeAlarm(alarmId: string): Promise<AlarmData | null> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/alarms/${alarmId}/acknowledge`, {
+    const res = await apiFetch(`/alarms/${alarmId}/acknowledge`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -286,7 +311,7 @@ export async function acknowledgeAlarm(alarmId: string): Promise<AlarmData | nul
 export async function resolveAlarm(alarmId: string): Promise<AlarmData | null> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/alarms/${alarmId}/resolve`, {
+    const res = await apiFetch(`/alarms/${alarmId}/resolve`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -318,7 +343,7 @@ export interface TemplateData {
 export async function fetchTemplates(): Promise<TemplateData[]> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/templates`, {
+    const res = await apiFetch(`/templates`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
     });
@@ -332,7 +357,7 @@ export async function fetchTemplates(): Promise<TemplateData[]> {
 export async function createTemplate(template: Partial<TemplateData>): Promise<TemplateData | null> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/templates`, {
+    const res = await apiFetch(`/templates`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -350,7 +375,7 @@ export async function createTemplate(template: Partial<TemplateData>): Promise<T
 export async function deleteTemplate(templateId: string): Promise<boolean> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/templates/${templateId}`, {
+    const res = await apiFetch(`/templates/${templateId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -376,8 +401,8 @@ export interface AssetData {
 export async function fetchAssets(parentId?: string): Promise<AssetData[]> {
   try {
     const token = await getAuthToken();
-    const url = parentId ? `${API_BASE}/assets?parent_id=${parentId}` : `${API_BASE}/assets`;
-    const res = await fetch(url, {
+    const path = parentId ? /assets?parent_id=\ : '/assets';
+    const res = await apiFetch(path, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
     });
@@ -391,7 +416,7 @@ export async function fetchAssets(parentId?: string): Promise<AssetData[]> {
 export async function createAsset(asset: Partial<AssetData>): Promise<AssetData | null> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/assets`, {
+    const res = await apiFetch(`/assets`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -409,7 +434,7 @@ export async function createAsset(asset: Partial<AssetData>): Promise<AssetData 
 export async function deleteAsset(assetId: string): Promise<boolean> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/assets/${assetId}`, {
+    const res = await apiFetch(`/assets/${assetId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -452,7 +477,7 @@ export async function fetchAggregatedTelemetry(
     const token = await getAuthToken();
     const query = new URLSearchParams({ metric, limit: limit.toString() });
     if (deviceKey && deviceKey !== 'all') query.append('device_key', deviceKey);
-    const res = await fetch(`${API_BASE}/telemetry/aggregate?${query.toString()}`, {
+    const res = await apiFetch(`/telemetry/aggregate?${query.toString()}`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
     });
@@ -466,7 +491,7 @@ export async function fetchAggregatedTelemetry(
 export async function fetchFleetKPIs(): Promise<FleetKPIs | null> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/telemetry/kpis`, {
+    const res = await apiFetch(`/telemetry/kpis`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
     });
@@ -505,7 +530,7 @@ export interface DashboardData {
 export async function fetchDashboards(): Promise<DashboardData[]> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/dashboards`, {
+    const res = await apiFetch(`/dashboards`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
     });
@@ -519,7 +544,7 @@ export async function fetchDashboards(): Promise<DashboardData[]> {
 export async function createDashboard(data: Partial<DashboardData>): Promise<DashboardData | null> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/dashboards`, {
+    const res = await apiFetch(`/dashboards`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -537,7 +562,7 @@ export async function createDashboard(data: Partial<DashboardData>): Promise<Das
 export async function updateDashboard(id: string, data: Partial<DashboardData>): Promise<DashboardData | null> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/dashboards/${id}`, {
+    const res = await apiFetch(`/dashboards/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -555,7 +580,7 @@ export async function updateDashboard(id: string, data: Partial<DashboardData>):
 export async function deleteDashboard(id: string): Promise<boolean> {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_BASE}/dashboards/${id}`, {
+    const res = await apiFetch(`/dashboards/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });

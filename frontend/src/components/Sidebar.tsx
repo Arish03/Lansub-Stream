@@ -4,11 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
-  Cpu, 
   Boxes, 
   GitBranch, 
   Workflow, 
-  Video, 
   Settings,
   BarChart3,
   Bell,
@@ -16,7 +14,6 @@ import {
   Radio,
   ChevronDown,
   ChevronRight,
-  Gauge,
   Zap,
   HardDrive
 } from 'lucide-react';
@@ -51,7 +48,7 @@ const NAV_ITEMS: NavItem[] = [
   { name: 'Data Pipelines', href: '/pipelines', icon: GitBranch },
   { name: 'Rule Engine', href: '/rules', icon: Workflow },
   { name: 'Alarms', href: '/alarms', icon: Bell },
-  { 
+  {
     name: 'AI & Vision', href: '/ai', icon: Zap,
     children: [
       { name: 'AI Models', href: '/ai' },

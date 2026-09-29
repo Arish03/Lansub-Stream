@@ -1,147 +1,117 @@
 'use client';
 
+import { HardDrive, Wifi, Cpu, Server, Layers, ArrowRight, Bell } from 'lucide-react';
 import { useState } from 'react';
-import { 
-  HardDrive, Cpu, Server, CheckCircle2, AlertTriangle, 
-  RefreshCw, ArrowUpCircle, Terminal, Layers, Wifi
-} from 'lucide-react';
 
-interface EdgeNode {
-  id: string;
-  name: string;
-  ip: string;
-  version: string;
-  status: 'online' | 'updating' | 'offline';
-  cpu: string;
-  ram: string;
-  containers: string[];
-}
-
-const EDGE_NODES: EdgeNode[] = [
+const UPCOMING_FEATURES = [
   {
-    id: 'NODE-01',
-    name: 'Main Plant Edge Gateway EG-01',
-    ip: '192.168.1.50',
-    version: 'K3s v1.28.4+k3s1',
-    status: 'online',
-    cpu: '24%',
-    ram: '1.8GB / 4.0GB',
-    containers: ['aedes-mqtt-broker', 'telemetry-sieve', 'redis-replica', 'cv-inference-yolo']
+    icon: Server,
+    title: 'K3s Edge Gateway Management',
+    description: 'Deploy and monitor lightweight K3s clusters on edge nodes with real-time CPU, memory, and container health.',
   },
   {
-    id: 'NODE-02',
-    name: 'Machining Bay Sub-Gateway EG-02',
-    ip: '192.168.1.51',
-    version: 'K3s v1.28.4+k3s1',
-    status: 'online',
-    cpu: '18%',
-    ram: '1.2GB / 4.0GB',
-    containers: ['modbus-bridge', 'opc-ua-collector', 'local-buffer']
-  }
+    icon: Wifi,
+    title: 'Offline Telemetry Caching',
+    description: 'Automatic local buffering when cloud connectivity is lost. Data syncs seamlessly on reconnection.',
+  },
+  {
+    icon: Cpu,
+    title: 'OTA Firmware & Container Updates',
+    description: 'Push firmware and containerized inference models over-the-air to remote edge devices with rollback support.',
+  },
+  {
+    icon: Layers,
+    title: 'Modbus / OPC-UA Collectors',
+    description: 'Industrial protocol bridges to ingest data from legacy PLCs, VFDs, and SCADA systems at the edge.',
+  },
 ];
 
 export default function EdgeComputingPage() {
-  const [nodes, setNodes] = useState<EdgeNode[]>(EDGE_NODES);
-  const [updatingNode, setUpdatingNode] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
-  const handleOTAUpdate = (id: string) => {
-    setUpdatingNode(id);
-    setTimeout(() => {
-      setUpdatingNode(null);
-    }, 2500);
+  const handleNotify = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email.trim()) {
+      setSubmitted(true);
+      setEmail('');
+    }
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-cyan-400 uppercase tracking-wider mb-1">
-            <HardDrive className="w-3.5 h-3.5" /> Edge Orchestration
-          </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Edge Computing & Gateways</h1>
-          <p className="text-sm text-slate-400 mt-1">
-            K3s lightweight container clusters, local offline telemetry caching, and Over-The-Air (OTA) runtime deployments.
-          </p>
-        </div>
-
-        <span className="flex items-center gap-2 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          2 / 2 Gateways Synchronized
-        </span>
+    <div className="min-h-[80vh] flex flex-col items-center justify-center px-4 py-16">
+      {/* Badge */}
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-500 dark:text-cyan-400 text-xs font-semibold uppercase tracking-widest mb-6">
+        <HardDrive className="w-3.5 h-3.5" />
+        Edge Computing
       </div>
 
-      {/* Nodes List */}
-      <div className="space-y-6">
-        {nodes.map(node => (
+      {/* Heading */}
+      <h1 className="text-4xl sm:text-5xl font-bold text-center text-slate-900 dark:text-white tracking-tight mb-4">
+        Coming{' '}
+        <span className="bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">
+          Soon
+        </span>
+      </h1>
+      <p className="text-base text-slate-500 dark:text-slate-400 text-center max-w-xl mb-12">
+        Edge Computing & Gateway Management is currently under development. Deploy K3s clusters, OTA firmware updates, and industrial protocol bridges — all from this dashboard.
+      </p>
+
+      {/* Animated icon ring */}
+      <div className="relative w-32 h-32 mb-14">
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-600/10 animate-pulse" />
+        <div className="absolute inset-3 rounded-full bg-gradient-to-br from-cyan-500/15 to-blue-600/10 animate-pulse [animation-delay:300ms]" />
+        <div className="absolute inset-6 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-xl">
+          <HardDrive className="w-10 h-10 text-cyan-500 dark:text-cyan-400" />
+        </div>
+      </div>
+
+      {/* Upcoming features grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl mb-12">
+        {UPCOMING_FEATURES.map(({ icon: Icon, title, description }) => (
           <div
-            key={node.id}
-            className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6 hover:border-slate-700 transition-all"
+            key={title}
+            className="flex items-start gap-4 p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/70 shadow-sm hover:border-cyan-500/30 transition-all"
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center font-bold">
-                  <Server className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="font-semibold text-white">{node.name}</h2>
-                  <div className="flex items-center gap-2 text-xs text-slate-400 font-mono mt-0.5">
-                    <span>{node.id}</span>
-                    <span>•</span>
-                    <span>{node.ip}</span>
-                    <span>•</span>
-                    <span className="text-cyan-400">{node.version}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => handleOTAUpdate(node.id)}
-                  disabled={updatingNode === node.id}
-                  className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-all cursor-pointer border border-slate-700 disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${updatingNode === node.id ? 'animate-spin' : ''}`} />
-                  {updatingNode === node.id ? 'Deploying OTA...' : 'Push Firmware OTA'}
-                </button>
-              </div>
+            <div className="w-9 h-9 shrink-0 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-500 dark:text-cyan-400">
+              <Icon className="w-4.5 h-4.5 w-[18px] h-[18px]" />
             </div>
-
-            {/* Resource Gauges & Containers */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <div className="flex justify-between text-slate-400">
-                  <span>Edge CPU Utilization</span>
-                  <strong className="text-white font-mono">{node.cpu}</strong>
-                </div>
-                <div className="w-full bg-slate-800 rounded-full h-2">
-                  <div className="bg-cyan-400 h-2 rounded-full" style={{ width: node.cpu }} />
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <div className="flex justify-between text-slate-400">
-                  <span>Edge Memory Allocation</span>
-                  <strong className="text-white font-mono">{node.ram}</strong>
-                </div>
-                <div className="w-full bg-slate-800 rounded-full h-2">
-                  <div className="bg-indigo-500 h-2 rounded-full" style={{ width: '45%' }} />
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <span className="text-slate-400 block mb-1.5 font-medium">Running Edge Containers (K3s)</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {node.containers.map((c, i) => (
-                    <span key={i} className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[11px] font-mono text-cyan-300">
-                      {c}
-                    </span>
-                  ))}
-                </div>
-              </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-0.5">{title}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{description}</p>
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Notify form */}
+      <div className="w-full max-w-md">
+        {submitted ? (
+          <div className="flex items-center justify-center gap-2.5 px-6 py-4 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 text-sm font-medium">
+            <Bell className="w-4 h-4" />
+            You'll be notified when Edge Computing launches!
+          </div>
+        ) : (
+          <form onSubmit={handleNotify} className="flex gap-2">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              required
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500 transition-all"
+            />
+            <button
+              type="submit"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-sm font-semibold shadow-lg shadow-cyan-500/20 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+            >
+              Notify Me <ArrowRight className="w-4 h-4" />
+            </button>
+          </form>
+        )}
+        <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-3">
+          No spam. We'll only notify you when this feature is ready.
+        </p>
       </div>
     </div>
   );

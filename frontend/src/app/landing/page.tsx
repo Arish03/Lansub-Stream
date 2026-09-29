@@ -4,10 +4,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTheme } from '@/lib/theme';
 import {
-  Activity, Radio, Workflow, BarChart3, HardDrive, Zap,
+  Activity, Radio, Workflow, BarChart3, HardDrive,
   ArrowRight, ChevronRight, Layers, Shield, Clock, Gauge,
   Sun, Moon, Globe, Server, Cpu, Database, Wifi,
-  CheckCircle2, Play, Sparkles, Eye
+  CheckCircle2, Play
 } from 'lucide-react';
 
 /* ─── Feature cards data ─── */
@@ -47,13 +47,6 @@ const FEATURES = [
     gradient: 'from-rose-500 to-pink-600',
     glow: 'rose',
   },
-  {
-    icon: Eye,
-    title: 'AI & Vision',
-    description: 'Computer vision pipelines for quality inspection, safety monitoring, and anomaly detection.',
-    gradient: 'from-indigo-500 to-blue-700',
-    glow: 'indigo',
-  },
 ];
 
 /* ─── Stats data ─── */
@@ -70,7 +63,6 @@ const ARCH_LAYERS = [
   { label: 'Data Ingestion', desc: 'Stream Processing & Validation', icon: Server, color: 'blue' },
   { label: 'Core Platform', desc: 'Rules, Twins, Analytics', icon: Layers, color: 'violet' },
   { label: 'Storage', desc: 'PostgreSQL / Redis / TimescaleDB', icon: Database, color: 'emerald' },
-  { label: 'AI / ML', desc: 'Inference, Vision, Predictions', icon: Sparkles, color: 'amber' },
   { label: 'Dashboard', desc: 'Real-Time UI & Alerts', icon: Globe, color: 'rose' },
 ];
 

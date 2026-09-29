@@ -14,8 +14,6 @@ The frontend includes dedicated views for monitoring and managing the industrial
 - **Alarms (`/alarms`)**: Threshold alerts, incident triage, and acknowledgment workflows.
 - **Rules (`/rules`)**: Automation rule configurations and condition builders.
 - **Pipelines (`/pipelines`)**: Data processing workflows and ingestion pipeline monitors.
-- **Computer Vision & CCTV (`/cctv`, `/vision`)**: Camera feeds and edge AI vision metrics.
-- **AI / Anomaly Detection (`/ai`)**: Machine learning telemetry inference and anomaly logs.
 - **Edge Nodes (`/edge`)**: Distributed gateway health and edge deployment statuses.
 - **Templates & Assets (`/templates`, `/assets`)**: Device templates and asset hierarchy trees.
 

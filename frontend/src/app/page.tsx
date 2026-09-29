@@ -1,19 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
-  Activity, Cpu, Wifi, WifiOff, ThermometerSun, Droplets, 
-  Zap, AlertTriangle, TrendingUp, TrendingDown, ArrowUpRight,
-  BarChart3, Gauge, Clock, Server, Shield, Eye, Send, RefreshCw, Radio
+  Activity, Cpu, ThermometerSun, Droplets, 
+  TrendingUp, Gauge, Server, Send, Radio
 } from 'lucide-react';
 import { useTelemetrySocket, TelemetryBroadcast } from '@/lib/useSocket';
-import { fetchDevices, sendTelemetryPayload, DeviceData } from '@/lib/api';
+import { fetchDevices, sendTelemetryPayload, fetchFleetKPIs, DeviceData, FleetKPIs } from '@/lib/api';
 
 export default function Dashboard() {
   const { isConnected, lastReading, feed } = useTelemetrySocket();
   const [devices, setDevices] = useState<DeviceData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [kpis, setKpis] = useState<FleetKPIs | null>(null);
 
   // Dynamic telemetry metrics
   const [liveTemp, setLiveTemp] = useState('42.5°C');
@@ -27,6 +28,7 @@ export default function Dashboard() {
       setDevices(devs);
       setIsLoading(false);
     });
+    fetchFleetKPIs().then((data) => setKpis(data));
   }, []);
 
   // Update metrics when new WebSocket broadcast arrives
@@ -233,7 +235,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Industrial OEE & Performance Summary */}
+          {/* Industrial OEE & Performance Summary */}
         <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 flex flex-col justify-between shadow-sm dark:shadow-xl">
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -241,41 +243,58 @@ export default function Dashboard() {
                 <Gauge className="w-4 h-4 text-cyan-500 dark:text-cyan-400" /> Plant Overall OEE
               </h2>
               <span className="text-xs font-semibold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
-                87.4% Target
+                {kpis ? `${kpis.oee.toFixed(1)}% OEE` : '— Target'}
               </span>
             </div>
 
-            <div className="space-y-4 pt-2">
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-500 dark:text-slate-400">Availability</span>
-                  <span className="text-slate-800 dark:text-slate-200 font-medium">94.2%</span>
-                </div>
-                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
-                  <div className="bg-cyan-500 dark:bg-cyan-400 h-2 rounded-full" style={{ width: '94.2%' }} />
-                </div>
+            {kpis === null ? (
+              // Skeleton while loading
+              <div className="space-y-4 pt-2 animate-pulse">
+                {[1, 2, 3].map((i) => (
+                  <div key={i}>
+                    <div className="flex justify-between mb-1">
+                      <div className="h-3 w-20 bg-slate-200 dark:bg-slate-800 rounded" />
+                      <div className="h-3 w-10 bg-slate-200 dark:bg-slate-800 rounded" />
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                      <div className="bg-slate-200 dark:bg-slate-700 h-2 rounded-full w-3/4" />
+                    </div>
+                  </div>
+                ))}
               </div>
+            ) : (
+              <div className="space-y-4 pt-2">
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-500 dark:text-slate-400">Availability</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-medium">{kpis.availability.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                    <div className="bg-cyan-500 dark:bg-cyan-400 h-2 rounded-full transition-all duration-700" style={{ width: `${kpis.availability}%` }} />
+                  </div>
+                </div>
 
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-500 dark:text-slate-400">Performance</span>
-                  <span className="text-slate-800 dark:text-slate-200 font-medium">89.6%</span>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-500 dark:text-slate-400">Performance</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-medium">{kpis.performance.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                    <div className="bg-indigo-500 h-2 rounded-full transition-all duration-700" style={{ width: `${kpis.performance}%` }} />
+                  </div>
                 </div>
-                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
-                  <div className="bg-indigo-500 h-2 rounded-full" style={{ width: '89.6%' }} />
-                </div>
-              </div>
 
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-500 dark:text-slate-400">Quality Rate</span>
-                  <span className="text-slate-800 dark:text-slate-200 font-medium">98.5%</span>
-                </div>
-                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
-                  <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '98.5%' }} />
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-500 dark:text-slate-400">Quality Rate</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-medium">{kpis.quality.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                    <div className="bg-emerald-500 h-2 rounded-full transition-all duration-700" style={{ width: `${kpis.quality}%` }} />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
@@ -334,7 +353,12 @@ export default function Dashboard() {
 
               <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800/40 flex justify-between text-[11px] text-slate-500">
                 <span>Updated: {device.last_seen_at ? new Date(device.last_seen_at).toLocaleTimeString() : 'Recently'}</span>
-                <span className="text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer font-medium">Telemetry &rarr;</span>
+                <Link
+                  href={`/analytics?device=${device.device_key}`}
+                  className="text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer font-medium"
+                >
+                  Telemetry &rarr;
+                </Link>
               </div>
             </div>
           ))}

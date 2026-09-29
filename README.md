@@ -49,7 +49,7 @@ flowchart TD
   - **Zero-Code Dashboard Builder**: Modular visual canvas to create bespoke monitoring screens with radial gauges, sparkline trends, KPI stat cards, actuator switches, and multi-sensor bars.
   - **Hardware Connection Wizard**: 4-step commissioning flow generating MQTT / REST credentials with code snippets (cURL, Python, Arduino ESP32, Node.js) and live handshake verification.
   - **Dark & Light Mode Switcher**: Integrated in the Top Navigation bar with `localStorage` persistence and zero-flicker hydration.
-  - Dedicated operational views for **Digital Twins**, **Devices**, **Analytics**, **Alarms**, **Rules**, **Pipelines**, **CCTV / Vision**, and **Edge Nodes**.
+  - Dedicated operational views for **Digital Twins**, **Devices**, **Analytics**, **Alarms**, **Rules**, **Pipelines**, and **Edge Nodes**.
 - **Containerized & Non-Conflicting**:
   - Fully Dockerized stack with host port remapping (`8500`, `8501`, `5433`, `6380`, `1884`) to eliminate port conflicts with existing local services.
 

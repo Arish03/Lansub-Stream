@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/lib/theme';
 import { AuthProvider } from '@/lib/auth';
 import { ViewModeProvider } from '@/lib/viewMode';
 import AppShell from '@/components/AppShell';
+import { ToastProvider } from '@/lib/toast';
 
 import Script from 'next/script';
 
@@ -56,7 +57,9 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <ViewModeProvider>
-              <AppShell>{children}</AppShell>
+              <ToastProvider>
+                <AppShell>{children}</AppShell>
+              </ToastProvider>
             </ViewModeProvider>
           </AuthProvider>
         </ThemeProvider>
