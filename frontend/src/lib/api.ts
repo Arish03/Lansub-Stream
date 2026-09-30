@@ -1,4 +1,4 @@
-﻿export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/v1';
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/v1';
 // Ordered candidate bases: configured URL first, then local-dev fallbacks (deduped).
 const CANDIDATE_BASES: string[] = [
   process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/v1',
@@ -282,7 +282,7 @@ export async function deleteRule(ruleId: string): Promise<boolean> {
 export async function fetchAlarms(status?: string): Promise<AlarmData[]> {
   try {
     const token = await getAuthToken();
-    const path = status ? /alarms?status=\ : '/alarms';
+    const path = status ? `/alarms?status=${encodeURIComponent(status)}` : '/alarms';
     const res = await apiFetch(path, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
@@ -401,7 +401,7 @@ export interface AssetData {
 export async function fetchAssets(parentId?: string): Promise<AssetData[]> {
   try {
     const token = await getAuthToken();
-    const path = parentId ? /assets?parent_id=\ : '/assets';
+    const path = parentId ? `/assets?parent_id=${encodeURIComponent(parentId)}` : '/assets';
     const res = await apiFetch(path, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',

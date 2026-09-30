@@ -7,7 +7,7 @@ import {
   Activity, Radio, Workflow, BarChart3, HardDrive,
   ArrowRight, ChevronRight, Layers, Shield, Clock, Gauge,
   Sun, Moon, Globe, Server, Cpu, Database, Wifi,
-  CheckCircle2, Play
+  CheckCircle2, Play, Sparkles
 } from 'lucide-react';
 
 /* ─── Feature cards data ─── */
