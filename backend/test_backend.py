@@ -6,8 +6,10 @@ import httpx
 import websockets
 
 
-BASE_URL = "http://98.70.44.215:8501"
-WS_URL = "ws://98.70.44.215:8501/ws"
+import os
+
+BASE_URL = os.getenv("TEST_BASE_URL", "http://127.0.0.1:8000")
+WS_URL = os.getenv("TEST_WS_URL", "ws://127.0.0.1:8000/ws")
 
 
 async def run_tests():
