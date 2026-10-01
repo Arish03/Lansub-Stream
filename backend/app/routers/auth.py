@@ -1,6 +1,6 @@
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
@@ -40,7 +40,7 @@ async def register_user(
         id=uuid.uuid4(),
         email=user_in.email,
         hashed_password=get_password_hash(user_in.password),
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.utcnow(),
     )
     db.add(new_user)
     await db.commit()
@@ -76,7 +76,7 @@ async def login(
             id=uuid.uuid4(),
             email=form_data.username,
             hashed_password=get_password_hash(form_data.password),
-            created_at=datetime.now(timezone.utc),
+           created_at=datetime.utcnow(),
         )
         db.add(user)
         await db.commit()
